@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trải nghiệm Tương tác Bàn tay linh thiêng</title>
+    <title>Trải nghiệm Tương tác Bàn tay linh thiêng - Tối ưu hóa</title>
     
-    <!-- Tải các thư viện MediaPipe qua CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
@@ -255,8 +254,27 @@
                 // Tính khoảng cách toán học giữa 2 tâm bàn tay (Công thức Euclid hình học không gian)
                 const distance = Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 
-                // Ngưỡng 0.12 tương đương việc hai bàn tay áp sát chặt vào nhau trên màn hình camera
-                if (distance < 0.12) {
+                // KIỂM TRA HƯỚNG CỦA 2 LÒNG BÀN TAY (TỐI ƯU HÓA)
+                // Chắp tay lạy nghĩa là 2 lòng bàn tay hướng vào nhau.
+                // Ta kiểm tra điểm cổ tay (0) và gốc ngón tay (9) để xác định hướng.
+                
+                // Vec tơ hướng từ cổ tay lên gốc ngón tay của tay 1
+                const v1x = hand1[9].x - hand1[0].x;
+                const v1y = hand1[9].y - hand1[0].y;
+                
+                // Vec tơ hướng từ cổ tay lên gốc ngón tay của tay 2
+                const v2x = hand2[9].x - hand2[0].x;
+                const v2y = hand2[9].y - hand2[0].y;
+
+                // Tính Tích vô hướng (Dot Product) của 2 véc tơ
+                const dotProduct = v1x * v2x + v1y * v2y;
+                
+                // Nếu 2 lòng bàn tay hướng vào nhau, các véc tơ hướng lên sẽ gần như song song và cùng chiều.
+                // Tích vô hướng sẽ dương và lớn hơn 0.
+                
+                // Ngưỡng 0.12 tương đương việc hai bàn tay áp sát chặt vào nhau trên màn hình camera.
+                // Thêm điều kiện dotProduct > 0.5 để đảm bảo lòng bàn tay hướng vào nhau.
+                if (distance < 0.12 && dotProduct > 0.5) {
                     triggerHaloEffect();
                 }
             }
