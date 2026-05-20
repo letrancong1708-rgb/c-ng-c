@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trải nghiệm Tâm Linh Tương Tác Cao Cấp</title>
+    <title>Sửa lỗi lau sương mờ - Tương tác trực quan</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
@@ -14,53 +14,66 @@
             width: 100%; 
             height: 100%; 
             overflow: hidden; 
-            background-color: #050508; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #000; 
+            font-family: 'Segoe UI', sans-serif; 
         }
         
         #app-container { 
             position: relative; 
             width: 100vw; 
             height: 100vh; 
-            background: radial-gradient(circle, #101428 0%, #050508 100%);
         }
         
-        /* Webcam nền được làm nhòe mạnh để tạo không gian nghệ thuật bí ẩn */
+        /* Webcam nền HIỂN THỊ RÕ NÉT, chỉ giảm sáng nhẹ để làm nổi bật hào quang */
         #webcam { 
             position: absolute; 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
-            transform: scaleX(-1); 
-            filter: blur(25px) brightness(0.4) contrast(1.2);
+            transform: scaleX(-1); /* Lật gương tự nhiên */
+            filter: brightness(0.7); 
             z-index: 1; 
-            opacity: 0.7;
         }
         
-        /* Canvas sương mờ */
-        #fog-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        /* Canvas chứa lớp sương mù trắng đục */
+        #fog-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 2; 
+            pointer-events: none; 
+        }
         
-        /* Canvas hào quang và các hạt ánh sáng bay */
-        #halo-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+        /* Canvas chứa các hạt lấp lánh và hào quang vàng kim */
+        #halo-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 3; 
+            pointer-events: none; 
+        }
         
-        /* Màn hình chờ phong cách Cyber-Zen tối giản, sang trọng */
+        /* Màn hình chờ tải hệ thống */
         #loading { 
             position: absolute; 
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%); 
-            color: #e0e5ff; 
+            color: #fff; 
             font-size: 16px; 
             letter-spacing: 2px;
-            background: rgba(10, 12, 26, 0.85); 
+            background: rgba(0, 0, 0, 0.85); 
             padding: 30px 50px; 
-            border-radius: 20px; 
+            border-radius: 15px; 
             z-index: 10; 
             text-align: center; 
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
             backdrop-filter: blur(10px);
-            transition: opacity 0.8s ease;
+            transition: opacity 0.5s ease;
         }
 
         .spinner {
@@ -70,60 +83,51 @@
             border-radius: 50%;
             border-top-color: #ffd700;
             margin: 0 auto 20px;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 1s linear infinite;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Bảng hiển thị thông số thu nhỏ tinh tế ở góc dưới thay vì góc trên thô kệch */
+        /* Bảng hiển thị trạng thái tinh tế ở góc màn hình */
         #debug-info {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(0, 0, 0, 0.6);
             padding: 8px 15px;
             font-family: monospace;
             z-index: 20;
-            font-size: 11px;
-            border-radius: 30px;
+            font-size: 12px;
+            border-radius: 20px;
             pointer-events: none;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         
-        /* Dòng chữ gợi ý ẩn hiện nhẹ nhàng ở giữa màn hình */
+        /* Hướng dẫn tương tác ẩn hiện nhẹ nhàng */
         #hint-text {
             position: absolute;
-            top: 15%;
+            top: 12%;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 235, 160, 0.8);
+            color: #fff;
             font-size: 18px;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             z-index: 5;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
             pointer-events: none;
             text-align: center;
-            animation: pulse 2.5s infinite ease-in-out;
-            font-weight: 300;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(0.98); }
-            50% { opacity: 0.9; transform: translateX(-50%) scale(1.02); }
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
     <div id="app-container">
-        <div id="hint-text">HÃY DÙNG TAY LAU MÀN HÌNH HOẶC CHẮP TAY LẠY</div>
-        <div id="debug-info">Đang kết nối hệ thống...</div>
+        <div id="hint-text">DÙNG 1 NGÓN TAY ĐỂ LAU SƯƠNG • CHẮP 2 TAY ĐỂ PHÓNG HÀO QUANG</div>
+        <div id="debug-info">Đang khởi động hệ thống camera...</div>
         <div id="loading">
             <div class="spinner"></div>
-            <div>ĐANG KHỞI TẠO KHÔNG GIAN TƯƠNG TÁC</div>
+            <div>ĐANG TẢI TRÍ TUỆ NHÂN TẠO NHẬN DIỆN...</div>
         </div>
         <video id="webcam" autoplay playsinline></video>
         <canvas id="fog-canvas"></canvas>
@@ -138,17 +142,15 @@
     const haloCtx = haloCanvas.getContext('2d');
     const loadingDiv = document.getElementById('loading');
     const debugDiv = document.getElementById('debug-info');
-    const hintText = document.getElementById('hint-text');
 
     let width, height;
-    let fogOpacity = 0.9; 
+    let fogOpacity = 0.93; // Độ đặc của sương mờ ban đầu
     let isHaloAnimating = false;
     let haloRadius = 0;
     let haloMaxRadius = 0;
     
-    // Mảng chứa các hạt ánh sáng lơ lửng tạo chiều sâu thẩm mỹ
     let particles = [];
-    const MAX_PARTICLES = 40;
+    const MAX_PARTICLES = 30;
 
     function resizeCanvases() {
         width = window.innerWidth;
@@ -161,55 +163,56 @@
         initFog();
     }
 
-    // Tạo lớp sương mù thẩm mỹ: màu xanh đá sang trọng trộn lẫn khói trắng nhạt
+    // Tạo lớp sương mù ĐỤC MÀU TRẮNG SỮA dày đặc để thấy rõ vết lau
     function initFog() {
         fogCtx.clearRect(0, 0, width, height);
         
-        // Tạo gradient sương mờ sang trọng có chiều sâu
-        let fogGrd = fogCtx.createLinearGradient(0, 0, width, height);
-        fogGrd.addColorStop(0, `rgba(24, 28, 43, ${fogOpacity})`);
-        fogGrd.addColorStop(0.5, `rgba(45, 52, 71, ${fogOpacity})`);
-        fogGrd.addColorStop(1, `rgba(17, 20, 31, ${fogOpacity})`);
-        
-        fogCtx.fillStyle = fogGrd;
+        // Vẽ nền sương mù trắng xám dày
+        fogCtx.fillStyle = `rgba(225, 230, 235, ${fogOpacity})`;
         fogCtx.fillRect(0, 0, width, height);
+        
+        // Làm mịn mờ rìa sương bằng bộ lọc blur của Canvas
+        fogCtx.save();
+        fogCtx.filter = 'blur(4px)';
+        fogCtx.restore();
     }
 
     window.addEventListener('resize', resizeCanvases);
     resizeCanvases();
 
-    // Sương mù tự động tụ lại nhẹ nhàng hơn, mượt hơn
+    // Sương mù tự động tụ lại cực kỳ chậm để người dùng kịp lau và nhìn ngắm
     setInterval(() => {
         if (!isHaloAnimating && fogOpacity < 0.95) {
-            fogOpacity += 0.002;
-            fogCtx.fillStyle = `rgba(20, 24, 38, 0.01)`;
+            fogCtx.fillStyle = `rgba(225, 230, 235, 0.005)`;
             fogCtx.fillRect(0, 0, width, height);
         }
-    }, 100);
+    }, 150);
 
-    // Khởi tạo các hạt ánh sáng tâm linh bay lơ lửng ngẫu nhiên trên màn hình
+    // Lớp hạt lấp lánh tâm linh bay lơ lửng nghệ thuật
     class Particle {
         constructor(x, y, isSpark = false) {
             this.x = x || Math.random() * width;
             this.y = y || Math.random() * height;
-            this.size = Math.random() * 3 + (isSpark ? 2 : 1);
-            this.speedX = (Math.random() - 0.5) * (isSpark ? 4 : 0.6);
-            this.speedY = (Math.random() - 0.7) * (isSpark ? 4 : 0.8);
-            this.alpha = Math.random() * 0.5 + 0.5;
-            this.color = isSpark ? `hsl(${Math.random() * 20 + 40}, 100%, 70%)` : '#dbe0ff';
-            this.life = isSpark ? 40 : 100;
+            this.size = Math.random() * 3 + (isSpark ? 3 : 1);
+            this.speedX = (Math.random() - 0.5) * (isSpark ? 5 : 0.5);
+            this.speedY = (Math.random() - 0.7) * (isSpark ? 5 : 0.5);
+            this.alpha = 1;
+            this.color = isSpark ? `hsl(${Math.random() * 25 + 45}, 100%, 65%)` : 'rgba(255,255,255,0.5)';
+            this.life = isSpark ? 30 : 120;
         }
         update() {
             this.x += this.speedX;
             this.y += this.speedY;
             this.life--;
-            if (this.alpha > 0.01) this.alpha -= 0.005;
+            this.alpha = Math.max(0, this.life / (this.life > 30 ? 120 : 30));
         }
         draw(ctx) {
             ctx.save();
             ctx.globalAlpha = this.alpha;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = this.color;
+            if(this.color !== 'rgba(255,255,255,0.5)') {
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+            }
             ctx.fillStyle = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -218,19 +221,17 @@
         }
     }
 
-    // Sinh ra các hạt nền bay sẵn từ đầu
+    // Khởi tạo các hạt lơ lửng ban đầu
     for(let i=0; i<MAX_PARTICLES; i++) { particles.push(new Particle()); }
 
-    // Vòng lặp vẽ hiệu ứng hạt liên tục
     function renderParticlesLoop() {
         if (!isHaloAnimating) {
             haloCtx.clearRect(0, 0, width, height);
-            // Cập nhật và vẽ hạt lơ lửng thông thường
             particles.forEach((p, index) => {
                 p.update();
                 p.draw(haloCtx);
-                if (p.life <= 0 || p.alpha <= 0) {
-                    particles[index] = new Particle(); // Thay hạt mới khi hạt cũ biến mất
+                if (p.life <= 0) {
+                    particles[index] = new Particle();
                 }
             });
         }
@@ -238,45 +239,42 @@
     }
     renderParticlesLoop();
 
-    // Hiệu ứng Sóng chấn động Hào quang Kim Sắc rực rỡ
+    // Hiệu ứng Sóng chấn động Hào quang Kim Sắc quét sạch sương mù
     function triggerHaloEffect() {
         if (isHaloAnimating) return;
         isHaloAnimating = true;
         haloRadius = 0;
         
-        // Ẩn dòng chữ gợi ý đi khi đang phóng hào quang
-        hintText.style.opacity = '0';
         playHaloSound();
 
-        // Tạo chấn động nổ tung các hạt sáng từ tâm màn hình
+        // Tạo vụ nổ hạt sáng tại trung tâm
         particles = [];
         const centerX = width / 2;
         const centerY = height / 2;
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 60; i++) {
             particles.push(new Particle(centerX, centerY, true));
         }
 
         function animateHalo() {
             haloCtx.clearRect(0, 0, width, height);
             
-            // 1. Cập nhật và vẽ các hạt vụn sáng bùng nổ
+            // Vẽ các hạt nổ bung
             particles.forEach((p) => {
                 p.update();
                 p.draw(haloCtx);
             });
 
-            // 2. Vẽ vòng tròn sóng thần hào quang vàng kim
+            // Vẽ vòng tròn sóng thần hào quang phát sáng
             haloRadius += 45; 
             
-            let gradient = haloCtx.createRadialGradient(centerX, centerY, haloRadius * 0.3, centerX, centerY, haloRadius);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');       // Tâm lõi trắng tinh khiết
-            gradient.addColorStop(0.1, 'rgba(255, 235, 130, 0.95)'); // Sóng vàng kim loại rực rỡ
-            gradient.addColorStop(0.3, 'rgba(240, 140, 20, 0.4)');   // Viền lửa cam tỏa năng lượng
-            gradient.addColorStop(0.8, 'rgba(255, 220, 100, 0.05)'); // Sóng dạt mỏng nhẹ
+            let gradient = haloCtx.createRadialGradient(centerX, centerY, haloRadius * 0.2, centerX, centerY, haloRadius);
+            gradient.addColorStop(0, '#ffffff');                     
+            gradient.addColorStop(0.15, '#ffdf6d'); 
+            gradient.addColorStop(0.4, '#ff9618');   
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');      
 
             haloCtx.save();
-            haloCtx.shadowBlur = 30;
+            haloCtx.shadowBlur = 25;
             haloCtx.shadowColor = '#ffd700';
             haloCtx.fillStyle = gradient;
             haloCtx.beginPath();
@@ -284,7 +282,7 @@
             haloCtx.fill();
             haloCtx.restore();
 
-            // 3. Quét sạch sương mờ mịn màng
+            // QUÉT DỌN SẠCH SƯƠNG MÙ
             fogCtx.save();
             fogCtx.globalCompositeOperation = 'destination-out';
             fogCtx.fillStyle = 'rgba(0, 0, 0, 1)';
@@ -296,74 +294,71 @@
             if (haloRadius < haloMaxRadius) {
                 requestAnimationFrame(animateHalo);
             } else {
-                // Kết thúc hiệu ứng
                 haloCtx.clearRect(0, 0, width, height);
                 isHaloAnimating = false;
                 fogOpacity = 0; 
-                // Reset lại mảng hạt lơ lửng hòa bình
                 particles = [];
                 for(let i=0; i<MAX_PARTICLES; i++) { particles.push(new Particle()); }
-                
-                // Hiện lại chữ gợi ý sau 3 giây thanh tịnh
-                setTimeout(() => { if(!isHaloAnimating) hintText.style.opacity = '1'; }, 3000);
             }
         }
         animateHalo();
     }
 
-    // m thanh chuông ngân chu kỳ tần số cao thanh tịnh
     function playHaloSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // Nốt Mi thanh thoát linh thiêng
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5); // Ngân siêu dài 2.5s
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.2); 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 2.5);
-        } catch(e) { console.log("m thanh bị chặn"); }
+            osc.stop(audioCtx.currentTime + 2.2);
+        } catch(e) {}
     }
 
     function onResults(results) {
         if (loadingDiv) {
             loadingDiv.style.opacity = '0';
-            setTimeout(() => loadingDiv.style.display = 'none', 800);
+            setTimeout(() => loadingDiv.style.display = 'none', 500);
         }
 
         let detectedHandsCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
         
         if (detectedHandsCount > 0) {
-            // Xử lý cọ lau mềm mượt, bo góc mờ nghệ thuật
+            // XỬ LÝ LAU SƯƠNG MỜ BẰNG ĐẦU NGÓN TAY TRỎ
             results.multiHandLandmarks.forEach((landmarks) => {
-                const indexTip = landmarks[8];
+                const indexTip = landmarks[8]; // Ngón trỏ
                 const x = (1 - indexTip.x) * width;
                 const y = indexTip.y * height;
 
                 fogCtx.save();
+                // Thay đổi thuộc tính xóa pixel để đục thủng lớp sương trắng làm lộ webcam nét căng phía sau
                 fogCtx.globalCompositeOperation = 'destination-out';
-                let brushRadius = 70; // Tăng cọ lau rộng hơn cho dễ lau
-                let eraserGrd = fogCtx.createRadialGradient(x, y, brushRadius * 0.1, x, y, brushRadius);
+                
+                let brushRadius = 75; // Kích thước cọ lau lớn để lau cho dễ và rõ ràng
+                let eraserGrd = fogCtx.createRadialGradient(x, y, brushRadius * 0.2, x, y, brushRadius);
                 eraserGrd.addColorStop(0, 'rgba(0, 0, 0, 1)');
-                eraserGrd.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
+                eraserGrd.addColorStop(0.8, 'rgba(0, 0, 0, 0.8)');
                 eraserGrd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
                 fogCtx.fillStyle = eraserGrd;
                 fogCtx.beginPath();
                 fogCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
                 fogCtx.fill();
                 fogCtx.restore();
                 
-                // Đồng thời sinh hạt ánh sáng lấp lánh ngay tại đầu ngón tay khi di chuyển lau kính
-                if(Math.random() < 0.4 && !isHaloAnimating) {
+                // Đồng thời tạo các hạt bụi vàng óng bắn ra ngay tại vị trí ngón tay đang lau kính
+                if(Math.random() < 0.5 && !isHaloAnimating) {
                     particles.push(new Particle(x, y, true));
-                    if(particles.length > MAX_PARTICLES + 20) particles.shift();
+                    if(particles.length > MAX_PARTICLES + 30) particles.shift();
                 }
             });
 
-            // KIỂM TRA CHẮP TAY
+            // KIỂM TRA CHẮP TAY PHÓNG HÀO QUANG
             if (detectedHandsCount === 2) {
                 const hand1 = results.multiHandLandmarks[0];
                 const hand2 = results.multiHandLandmarks[1];
@@ -372,18 +367,16 @@
                 const distMcp = Math.hypot(hand1[9].x - hand2[9].x, hand1[9].y - hand2[9].y);
                 const chắpTayDistance = (distWrist + distMcp) / 2;
 
-                debugDiv.style.color = '#ffd700';
-                debugDiv.innerHTML = `Hệ thống ổn định • Độ khít chắp tay: ${(100 - chắpTayDistance*400).toFixed(0)}%`;
+                debugDiv.innerHTML = `Độ khít chắp tay: ${(100 - chắpTayDistance*400).toFixed(0)}% (Cần đạt > 40% để lạy)`;
 
                 if (chắpTayDistance < 0.15 && !isHaloAnimating) {
                     triggerHaloEffect();
                 }
             } else {
-                debugDiv.style.color = 'rgba(255,255,255,0.4)';
-                debugDiv.innerHTML = `Hệ thống sẵn sàng • Đã tìm thấy ${detectedHandsCount} tay`;
+                debugDiv.innerHTML = `Đã nhận diện ${detectedHandsCount} tay • Hãy lau màn hình`;
             }
         } else {
-            debugDiv.innerHTML = "Đang chờ bàn tay xuất hiện...";
+            debugDiv.innerHTML = "Đang chờ bàn tay xuất hiện trước webcam...";
         }
     }
 
@@ -407,7 +400,7 @@
     });
     
     camera.start().catch(err => {
-        debugDiv.innerHTML = "Lỗi kết nối thiết bị camera!";
+        debugDiv.innerHTML = "Không tìm thấy thiết bị Camera!";
     });
 </script>
 
