@@ -193,7 +193,7 @@
                 debugDiv.innerHTML = `Số tay: 2 <br> Khoảng cách chắp: ${chắpTayDistance.toFixed(3)} <br> (Yêu cầu < 0.150 để kích hoạt)`;
 
                 // Khi chắp tay lại sát nhau, khoảng cách chuẩn hóa thường giảm xuống dưới 0.15
-                if (chắpTayDistance < 0.15 && !isHaloAnimating) {
+                if (chắpTayDistance < 0.20 && !isHaloAnimating) {
                     triggerHaloEffect();
                 }
             } else {
