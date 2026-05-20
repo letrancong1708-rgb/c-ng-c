@@ -116,10 +116,10 @@
     // Sương tự tụ lại rất chậm
     setInterval(() => {
         if (!isHaloAnimating && fogOpacity < 0.95) {
-            fogCtx.fillStyle = `rgba(230, 235, 240, 0.004)`;
+            fogCtx.fillStyle = `rgba(230, 235, 240, 0.015)`;
             fogCtx.fillRect(0, 0, width, height);
         }
-    }, 150);
+    }, 40);
 
     // Hạt ánh sáng lơ lửng nhỏ nhẹ
     class Particle {
