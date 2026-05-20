@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kính Đọng Sương Siêu Thực - Hiệu Ứng Nghệ Thuật</title>
+    <title>Hào Quang Tỏa Toàn Phía - Giữa Trong Suốt</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
@@ -30,7 +30,7 @@
             height: 100%; 
             object-fit: cover; 
             transform: scaleX(-1); 
-            filter: brightness(0.85) contrast(1.05); /* Tăng nhẹ tương phản cho ảnh nền sâu hơn */
+            filter: brightness(0.9);
             z-index: 1; 
         }
         
@@ -43,25 +43,25 @@
         }
         
         #loading { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 14px; letter-spacing: 2px; background: rgba(10, 15, 30, 0.9); padding: 30px 50px; border-radius: 20px; z-index: 10; text-align: center; border: 1px solid rgba(0, 243, 255, 0.2); backdrop-filter: blur(15px); transition: opacity 0.5s ease; boxShadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 14px; letter-spacing: 2px; background: rgba(0, 0, 0, 0.85); padding: 30px 50px; border-radius: 15px; z-index: 10; text-align: center; border: 1px solid rgba(255, 215, 0, 0.3); backdrop-filter: blur(10px);
         }
 
-        .spinner { width: 45px; height: 45px; border: 3px solid rgba(0, 243, 255, 0.1); border-radius: 50%; border-top-color: #00f3ff; margin: 0 auto 20px; animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: #ffd700; margin: 0 auto 20px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        #debug-info { position: absolute; bottom: 20px; left: 20px; color: rgba(255, 255, 255, 0.6); background: rgba(10, 15, 25, 0.7); padding: 8px 18px; font-family: monospace; z-index: 20; font-size: 11px; border-radius: 20px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.08); }
+        #debug-info { position: absolute; bottom: 20px; left: 20px; color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.6); padding: 8px 15px; font-family: monospace; z-index: 20; font-size: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         
-        #hint-text { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); color: #fff; font-size: 16px; letter-spacing: 3px; z-index: 5; text-shadow: 0 2px 15px rgba(0, 0, 0, 0.9); pointer-events: none; text-align: center; font-weight: 500; opacity: 0.9; }
+        #hint-text { position: absolute; top: 12%; left: 50%; transform: translateX(-50%); color: #fff; font-size: 16px; letter-spacing: 2px; z-index: 5; text-shadow: 0 0 10px rgba(0, 0, 0, 0.8); pointer-events: none; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="app-container">
-        <div id="hint-text">VUỐT 1 NGÓN TAY ĐỂ LAU SƯƠNG • CHẮP TAY PHÓNG SÓNG THIỀN KHÔNG</div>
-        <div id="debug-info">Đang khởi tạo linh hồn AI...</div>
+        <div id="hint-text">LAU SƯƠNG BẰNG 1 NGÓN TAY • CHẮP TRƯỚC NGỰC ĐỂ HIỆN HÀO QUANG TOÀN THÂN</div>
+        <div id="debug-info">Đang khởi động camera hệ thống...</div>
         <div id="loading">
             <div class="spinner"></div>
-            <div>HỆ THỐNG ĐANG QUÉT MÔ TRƯỜNG KÍNH KỸ THUẬT SỐ...</div>
+            <div>ĐANG TẢI MÔ HÌNH HÀO QUANG TOÀN DIỆN...</div>
         </div>
         <video id="webcam" autoplay playsinline></video>
         <canvas id="fog-canvas"></canvas>
@@ -79,13 +79,13 @@
     const hintText = document.getElementById('hint-text');
 
     let width, height;
-    let isHaloAnimating = false;
-    let haloRadius = 0;
-    let haloMaxRadius = 0;
+    let fogOpacity = 0.93; 
+    let isChắpTay = false;
+    let haloAlpha = 0; 
     let latestHandResults = null; 
     
     let particles = [];
-    const MAX_PARTICLES = 40; // Tăng lượng hạt lấp lánh cho lung linh
+    const MAX_PARTICLES = 30;
 
     function resizeCanvases() {
         width = window.innerWidth;
@@ -94,249 +94,193 @@
         fogCanvas.height = height;
         haloCanvas.width = width;
         haloCanvas.height = height;
-        haloMaxRadius = Math.sqrt(width * width + height * height);
         initFog();
     }
 
-    // Khởi tạo lớp sương mù trắng sữa nghệ thuật ban đầu
     function initFog() {
         fogCtx.clearRect(0, 0, width, height);
-        fogCtx.fillStyle = `rgba(235, 240, 245, 0.95)`;
+        fogCtx.fillStyle = `rgba(230, 235, 240, ${fogOpacity})`;
         fogCtx.fillRect(0, 0, width, height);
     }
 
     window.addEventListener('resize', resizeCanvases);
     resizeCanvases();
 
-    // TỐC ĐỘ ĐỌNG SƯƠNG NHANH HƠN VÀ ĐẸP HƠN (Tụ lại loang lổ như hơi thở thật)
+    // Sương tự tụ lại theo thời gian
     setInterval(() => {
-        if (!isHaloAnimating) {
-            // Chọn các vị trí ngẫu nhiên trên màn hình để tụ sương thành các đám nhỏ mịn
+        if (!isChắpTay) {
             let randomX = Math.random() * width;
             let randomY = Math.random() * height;
-            let mistRadius = Math.random() * 150 + 100;
-
+            let mistRadius = Math.random() * 160 + 100;
             let mistGrd = fogCtx.createRadialGradient(randomX, randomY, 0, randomX, randomY, mistRadius);
-            mistGrd.addColorStop(0, 'rgba(235, 240, 245, 0.04)'); // Sương đọng đặc ở tâm điểm tụ tụ
-            mistGrd.addColorStop(1, 'rgba(235, 240, 245, 0)');
-
-            fogCtx.save();
-            fogCtx.fillStyle = mistGrd;
-            fogCtx.beginPath();
-            fogCtx.arc(randomX, randomY, mistRadius, 0, Math.PI * 2);
-            fogCtx.fill();
-            fogCtx.restore();
-
-            // Phủ thêm một lớp sương siêu mỏng toàn màn hình để giữ độ mờ tổng thể
-            fogCtx.fillStyle = `rgba(235, 240, 245, 0.003)`;
+            mistGrd.addColorStop(0, 'rgba(230, 235, 240, 0.03)');
+            mistGrd.addColorStop(1, 'rgba(230, 235, 240, 0)');
+            fogCtx.save(); fogCtx.fillStyle = mistGrd; fogCtx.beginPath(); fogCtx.arc(randomX, randomY, mistRadius, 0, Math.PI * 2); fogCtx.fill(); fogCtx.restore();
+            
+            fogCtx.fillStyle = `rgba(230, 235, 240, 0.002)`;
             fogCtx.fillRect(0, 0, width, height);
         }
-    }, 40); // Giảm thời gian lặp xuống 40ms để sương kéo tới nhanh hơn rần rần
+    }, 50);
 
-    // Hạt ánh sáng vàng kim lấp lánh rơi rụng nghệ thuật
+    // Bụi lấp lánh nghệ thuật
     class Particle {
         constructor(x, y, isSpark = false) {
             this.x = x || Math.random() * width;
             this.y = y || Math.random() * height;
-            // Hạt khi lau sẽ to nhỏ ngẫu nhiên nhìn rất tự nhiên
-            this.size = isSpark ? (Math.random() * 3 + 1.5) : (Math.random() * 1.2 + 0.5);
-            this.speedX = (Math.random() - 0.5) * (isSpark ? 4 : 0.2);
-            this.speedY = isSpark ? (Math.random() * 3 - 1) : (Math.random() * 0.4 + 0.1); // Hạt bay lững lờ rơi xuống nhẹ nhàng
+            this.size = Math.random() * 1.5 + (isSpark ? 2.5 : 0.6);
+            this.speedX = (Math.random() - 0.5) * (isSpark ? 3 : 0.2);
+            this.speedY = isSpark ? (Math.random() * 2 - 0.5) : (Math.random() * 0.4 + 0.1);
             this.alpha = 1;
-            // Đổi tông màu sang hạt vàng bạch kim huyền ảo sang trọng
-            this.color = isSpark ? `hsl(${Math.random() * 15 + 46}, 100%, ${Math.random() * 20 + 70}%)` : 'rgba(255,255,255,0.25)';
-            this.life = isSpark ? (Math.random() * 40 + 40) : 150; // Kéo dài tuổi thọ của hạt để tạo vệt đuôi dài quyến rũ
+            this.color = isSpark ? `hsl(${Math.random() * 20 + 40}, 100%, 70%)` : 'rgba(255,255,255,0.2)';
+            this.life = isSpark ? 60 : 140;
         }
         update() {
             this.x += this.speedX;
             this.y += this.speedY;
             this.life--;
-            this.alpha = Math.max(0, this.life / (this.life > 40 ? 150 : 40));
+            this.alpha = Math.max(0, this.life / (this.life > 40 ? 140 : 40));
         }
         draw(ctx) {
-            ctx.save();
-            ctx.globalAlpha = this.alpha;
-            if(this.color !== 'rgba(255,255,255,0.25)') {
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = this.color;
-            }
-            ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.globalAlpha = this.alpha;
+            if(this.color !== 'rgba(255,255,255,0.2)') { ctx.shadowBlur = 8; ctx.shadowColor = this.color; }
+            ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
         }
     }
 
-    for(let i=0; i<20; i++) { particles.push(new Particle()); }
+    for(let i=0; i<MAX_PARTICLES; i++) { particles.push(new Particle()); }
 
-    // Vẽ khung nhận diện tay nghệ thuật (Thiết kế Neon mỏng sang trọng)
-    function drawHandTracking(ctx, results) {
-        if (!results || !results.multiHandLandmarks) return;
+    // CẬP NHẬT: Hào quang tỏa 360 độ xung quanh, giữa TRONG SUỐT nhìn rõ người
+    function drawDivineHalo(ctx) {
+        if (haloAlpha <= 0) return;
+
+        // Đặt tâm hào quang ở chính giữa màn hình để tỏa đi toàn bộ các phía
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // Bán kính vùng trong suốt ở giữa (nơi chứa khuôn mặt bạn)
+        const innerRadius = Math.min(width, height) * 0.25; 
+        // Bán kính tổng thể của dải hào quang tỏa rộng ra rìa
+        const outerRadius = Math.min(width, height) * 0.65; 
+
+        ctx.save();
+        ctx.globalAlpha = haloAlpha;
+        
+        // Tạo gradient tỏa tròn từ tâm ra ngoài
+        let gradient = ctx.createRadialGradient(
+            centerX, centerY, innerRadius, 
+            centerX, centerY, outerRadius
+        );
+        
+        // Thay đổi thông số Alpha: 0 là trong suốt hoàn toàn, 1 là đặc màu
+        gradient.addColorStop(0, 'rgba(255, 235, 120, 0.05)');  // Chính giữa cực kỳ trong suốt (chỉ giữ 5% ánh mờ vàng)
+        gradient.addColorStop(0.2, 'rgba(255, 210, 50, 0.3)');   // Bắt đầu gợn vàng nhẹ
+        gradient.addColorStop(0.5, 'rgba(255, 140, 20, 0.75)');  // Thân hào quang màu Cam lửa rực sáng ở rìa ngoài
+        gradient.addColorStop(0.8, 'rgba(240, 90, 10, 0.35)');   // Viền đỏ cam mờ dần bay ra xa
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');     // Trong suốt hoàn toàn ở rìa ngoài cùng
+
+        ctx.fillStyle = gradient;
+        
+        // Vẽ phủ một hình tròn lớn chứa toàn bộ vùng gradient này
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Tự động dọn sương mù toàn bộ vùng hào quang chiếu tới để làm lộ ảnh camera rõ nét
+        fogCtx.save();
+        fogCtx.globalCompositeOperation = 'destination-out';
+        fogCtx.fillStyle = 'rgba(0, 0, 0, 1)';
+        fogCtx.beginPath();
+        fogCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+        fogCtx.fill();
+        fogCtx.restore();
+    }
+
+    // KHUNG QUÉT TAY (Giữ nguyên giao diện hộp vàng nét đứt tinh tế)
+    function drawHandYoloBox(ctx, results) {
+        if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return;
+
+        let minX = width, maxX = 0, minY = height, maxY = 0;
 
         results.multiHandLandmarks.forEach((landmarks) => {
-            let minX = width, maxX = 0, minY = height, maxY = 0;
-
-            ctx.save();
-            ctx.fillStyle = 'rgba(0, 243, 255, 0.85)';
-            ctx.shadowBlur = 6;
-            ctx.shadowColor = '#00f3ff';
-            
             landmarks.forEach((pt) => {
                 const x = (1 - pt.x) * width;
                 const y = pt.y * height;
-                
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-
-                // Vẽ các điểm khớp nhỏ nhắn tinh tế
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fill();
+                if (x < minX) minX = x; if (x > maxX) maxX = x;
+                if (y < minY) minY = y; if (y > maxY) maxY = y;
             });
-
-            // Vẽ Bounding Box góc vuông bo nhẹ góc (Phong cách tương lai AI)
-            const padding = 20;
-            ctx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
-            ctx.strokeRect(minX - padding, minY - padding, (maxX - minX) + padding * 2, (maxY - minY) + padding * 2);
-            ctx.restore();
         });
+
+        ctx.save();
+        const padding = 30;
+        ctx.strokeStyle = 'rgba(255, 200, 50, 0.7)'; 
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]); 
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(255, 200, 50, 0.4)';
+        ctx.strokeRect(minX - padding, minY - padding, (maxX - minX) + padding * 2, (maxY - minY) + padding * 2);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(minX - padding, minY - padding - 25, 240, 25);
+        ctx.fillStyle = '#ffdf6d';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`prayer • 99% (tâm thanh tịnh) / min`, minX - padding + 8, minY - padding - 8);
+        ctx.restore();
     }
 
-    // Vòng lặp vẽ hạt và UI
     function mainRenderLoop() {
         haloCtx.clearRect(0, 0, width, height);
 
+        if (isChắpTay) {
+            if (haloAlpha < 1) haloAlpha += 0.08; 
+        } else {
+            if (haloAlpha > 0) haloAlpha -= 0.04; 
+        }
+
+        // Vẽ hào quang 360 độ trong suốt ở giữa
+        drawDivineHalo(haloCtx);
+
+        // Vẽ các hạt lấp lánh tự do
         particles.forEach((p, index) => {
-            p.update();
-            p.draw(haloCtx);
+            p.update(); p.draw(haloCtx);
             if (p.life <= 0) {
-                // Nếu là hạt bụi nền thì hồi sinh, hạt ngón tay tự biến mất
                 if (particles.length > MAX_PARTICLES) particles.splice(index, 1);
                 else particles[index] = new Particle();
             }
         });
 
-        drawHandTracking(haloCtx, latestHandResults);
+        // Vẽ khung nhận diện
+        if (latestHandResults && latestHandResults.multiHandLandmarks && latestHandResults.multiHandLandmarks.length > 0) {
+            drawHandYoloBox(haloCtx, latestHandResults);
+        }
+
         requestAnimationFrame(mainRenderLoop);
     }
     requestAnimationFrame(mainRenderLoop);
 
-    // Hiệu ứng phóng sóng hào quang mượt mà nhẹ nhàng thanh tịnh
-    function triggerHaloEffect() {
-        if (isHaloAnimating) return;
-        isHaloAnimating = true;
-        haloRadius = 0;
-        
-        hintText.style.opacity = '0';
-        playZenBellSound(); 
-
-        const centerX = width / 2;
-        const centerY = height / 2;
-
-        function animateHalo() {
-            haloRadius += 16; // Tốc độ sóng loang ra chậm rãi, thư thái cực đẹp
-            
-            if (haloRadius < haloMaxRadius) {
-                // Hạt sáng bắn ra lãng mạn nương theo vòng sóng lan tỏa
-                for (let i = 0; i < 3; i++) {
-                    let angle = Math.random() * Math.PI * 2;
-                    let pX = centerX + Math.cos(angle) * haloRadius;
-                    let pY = centerY + Math.sin(angle) * haloRadius;
-                    particles.push(new Particle(pX, pY, true));
-                }
-            }
-
-            // Vẽ viền sóng huyền ảo trong suốt
-            let waveWidth = 60; 
-            let waveCanvas = document.createElement('canvas');
-            waveCanvas.width = width;
-            waveCanvas.height = height;
-            let waveCtx = waveCanvas.getContext('2d');
-
-            waveCtx.lineWidth = waveWidth;
-            let gradient = waveCtx.createRadialGradient(
-                centerX, centerY, Math.max(0, haloRadius - waveWidth), 
-                centerX, centerY, haloRadius + waveWidth
-            );
-            gradient.addColorStop(0, 'rgba(255, 230, 150, 0)');     
-            gradient.addColorStop(0.5, 'rgba(255, 245, 200, 0.55)'); 
-            gradient.addColorStop(0.55, 'rgba(255, 255, 255, 0.75)');   
-            gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');     
-            
-            waveCtx.strokeStyle = gradient;
-            waveCtx.shadowBlur = 35;
-            waveCtx.shadowColor = 'rgba(255, 220, 100, 0.4)';
-            
-            waveCtx.beginPath();
-            waveCtx.arc(centerX, centerY, haloRadius, 0, Math.PI * 2);
-            waveCtx.stroke();
-
-            haloCtx.drawImage(waveCanvas, 0, 0);
-
-            // Dọn sương mượt mà theo bước sóng
-            fogCtx.save();
-            fogCtx.globalCompositeOperation = 'destination-out';
-            fogCtx.fillStyle = 'rgba(0, 0, 0, 1)';
-            fogCtx.beginPath();
-            fogCtx.arc(centerX, centerY, haloRadius + 15, 0, Math.PI * 2);
-            fogCtx.fill();
-            fogCtx.restore();
-
-            if (haloRadius < haloMaxRadius) {
-                requestAnimationFrame(animateHalo);
-            } else {
-                isHaloAnimating = false;
-                setTimeout(() => { if(!isHaloAnimating) hintText.style.opacity = '0.9'; }, 3000);
-            }
-        }
-        animateHalo();
-    }
-
-    // Tiếng chuông ngọc thanh tịnh ngân nga sâu lắng
-    function playZenBellSound() {
+    let audioCtx = null;
+    function playZenSound() {
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(783.99, audioCtx.currentTime); // Nốt G5 thanh tao trong trẻo
-            
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(1174.66, audioCtx.currentTime); // Đồng điệu hài âm tần số cao ngọt ngào
-            
-            gain1.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5); 
-            
-            gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
-
-            osc1.connect(gain1); gain1.connect(audioCtx.destination);
-            osc2.connect(gain2); gain2.connect(audioCtx.destination);
-            
-            osc1.start(); osc2.start();
-            osc1.stop(audioCtx.currentTime + 3.5);
-            osc2.stop(audioCtx.currentTime + 3.5);
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 2.5);
         } catch(e) {}
     }
 
     function onResults(results) {
-        if (loadingDiv) {
-            loadingDiv.style.opacity = '0';
-            setTimeout(() => loadingDiv.style.display = 'none', 500);
-        }
+        if (loadingDiv) { loadingDiv.style.opacity = '0'; setTimeout(() => loadingDiv.style.display = 'none', 500); }
 
         latestHandResults = results;
         let detectedHandsCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
         
         if (detectedHandsCount > 0) {
-            // Logic di ngón tay quẹt lau sương nghệ thuật bóng mượt
+            // Lau sương bằng ngón tay trỏ
             results.multiHandLandmarks.forEach((landmarks) => {
                 const indexTip = landmarks[8];
                 const x = (1 - indexTip.x) * width;
@@ -344,29 +288,19 @@
 
                 fogCtx.save();
                 fogCtx.globalCompositeOperation = 'destination-out';
-                
-                // Hiệu ứng cọ lau loang mờ nhòe dịu mắt (không bị viền sắc lẹm thô kệch)
-                let brushRadius = 80; 
+                let brushRadius = 75; 
                 let eraserGrd = fogCtx.createRadialGradient(x, y, brushRadius * 0.1, x, y, brushRadius);
-                eraserGrd.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
-                eraserGrd.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
+                eraserGrd.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                eraserGrd.addColorStop(0.8, 'rgba(0, 0, 0, 0.8)');
                 eraserGrd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                fogCtx.fillStyle = eraserGrd; fogCtx.beginPath(); fogCtx.arc(x, y, brushRadius, 0, Math.PI * 2); fogCtx.fill(); fogCtx.restore();
                 
-                fogCtx.fillStyle = eraserGrd;
-                fogCtx.beginPath();
-                fogCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
-                fogCtx.fill();
-                fogCtx.restore();
-                
-                // Bắn hạt lấp lánh dày đặc bám đuôi ngón tay khi di chuyển cực kỳ thích mắt
-                if(Math.random() < 0.6) {
-                    for(let k=0; k<2; k++) {
-                        particles.push(new Particle(x + (Math.random()-0.5)*15, y + (Math.random()-0.5)*15, true));
-                    }
+                if(Math.random() < 0.3 && !isChắpTay) {
+                    particles.push(new Particle(x, y, true));
                 }
             });
 
-            // Thuật toán đo đạc chắp tay
+            // Kiểm tra trạng thái chắp tay
             if (detectedHandsCount === 2) {
                 const hand1 = results.multiHandLandmarks[0];
                 const hand2 = results.multiHandLandmarks[1];
@@ -375,38 +309,36 @@
                 const distMcp = Math.hypot(hand1[9].x - hand2[9].x, hand1[9].y - hand2[9].y);
                 const chắpTayDistance = (distWrist + distMcp) / 2;
 
-                debugDiv.innerHTML = `Độ khít chắp tay: ${(100 - chắpTayDistance*400).toFixed(0)}% (Đạt > 45% để phóng sóng)`;
+                debugDiv.innerHTML = `Độ khít chắp tay: ${(100 - chắpTayDistance*400).toFixed(0)}%`;
 
-                if (chắpTayDistance < 0.14 && !isHaloAnimating) {
-                    triggerHaloEffect();
+                if (chắpTayDistance < 0.15) {
+                    if (!isChắpTay) {
+                        isChắpTay = true;
+                        playZenSound(); 
+                    }
+                } else {
+                    isChắpTay = false;
                 }
             } else {
-                debugDiv.innerHTML = `Đã nhận diện ${detectedHandsCount} tay • Hãy lau sương kính`;
+                isChắpTay = false;
+                debugDiv.innerHTML = `Đã tìm thấy ${detectedHandsCount} bàn tay • Hãy chắp cả 2 tay lại`;
             }
         } else {
-            debugDiv.innerHTML = "Nhìn vào webcam và giơ tay lên nào...";
+            isChắpTay = false;
+            latestHandResults = null;
+            debugDiv.innerHTML = "Đang chờ bàn tay xuất hiện...";
         }
     }
 
-    const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
-
-    hands.setOptions({
-        maxNumHands: 2,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.6, 
-        minTrackingConfidence: 0.6
-    });
-
+    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.55, minTrackingConfidence: 0.55 });
     hands.onResults(onResults);
 
     const camera = new Camera(videoElement, {
         onFrame: async () => { await hands.send({ image: videoElement }); },
-        width: 1280,
-        height: 720
+        width: 1280, height: 720
     });
-    camera.start().catch(err => { debugDiv.innerHTML = "Vui lòng cấp quyền truy cập Camera!"; });
+    camera.start().catch(err => { debugDiv.innerHTML = "Không tìm thấy thiết bị Camera!"; });
 </script>
 
 </body>
