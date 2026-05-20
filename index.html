@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trải nghiệm Tương tác Bàn tay linh thiêng</title>
+    
+    <!-- Tải các thư viện MediaPipe qua CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+        }
+        /* Container chứa video và các lớp canvas */
+        #app-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        /* Webcam ẩn đi hoặc thu nhỏ ở góc nếu muốn, ở đây hiển thị full nền */
+        #webcam {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Lật gương để tương tác tự nhiên */
+            z-index: 1;
+        }
+        /* Canvas dùng để vẽ lớp sương mờ và xử lý vết lau */
+        #fog-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none; /* Để không cản trở tương tác chuột nếu có */
+        }
+        /* Canvas chuyên xử lý hiệu ứng hào quang phóng ra */
+        #halo-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            pointer-events: none;
+        }
+        /* Trạng thái loading chờ tải AI */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 10;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="loading">Đang khởi tạo Camera và Trí tuệ nhân tạo nhận diện tay...</div>
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="fog-canvas"></canvas>
+        <canvas id="halo-canvas"></canvas>
+    </div>
+
+<script>
+    const videoElement = document.getElementById('webcam');
+    const fogCanvas = document.getElementById('fog-canvas');
+    const fogCtx = fogCanvas.getContext('2d');
+    const haloCanvas = document.getElementById('halo-canvas');
+    const haloCtx = haloCanvas.getContext('2d');
+    const loadingDiv = document.getElementById('loading');
+
+    let width, height;
+    let fogOpacity = 0.85; // Độ mờ ban đầu của sương
+    let isHaloAnimating = false;
+    let haloRadius = 0;
+    let haloMaxRadius = 0;
+
+    // Điều chỉnh kích thước canvas theo kích thước màn hình hiển thị
+    function resizeCanvases() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        
+        fogCanvas.width = width;
+        fogCanvas.height = height;
+        haloCanvas.width = width;
+        haloCanvas.height = height;
+        
+        haloMaxRadius = Math.sqrt(width * width + height * height); // Khoảng cách tối đa từ tâm ra góc
+        initFog();
+    }
+
+    // Khởi tạo lớp sương mù ban đầu đục màu xám trắng kèm hiệu ứng blur
+    function initFog() {
+        fogCtx.save();
+        fogCtx.fillStyle = `rgba(220, 225, 230, ${fogOpacity})`;
+        fogCtx.fillRect(0, 0, width, height);
+        // Thêm một chút nhiễu đục tạo cảm giác hạt sương thật hơn
+        fogCtx.filter = 'blur(8px)';
+        fogCtx.restore();
+    }
+
+    window.addEventListener('resize', resizeCanvases);
+    // Chạy lần đầu thiết lập kích thước
+    resizeCanvases();
+
+    // Vòng lặp tự động tích tụ lại sương mờ dần dần theo thời gian nếu không lau
+    setInterval(() => {
+        if (!isHaloAnimating && fogOpacity < 0.95) {
+            fogOpacity += 0.003; // Tốc độ đọng sương tự động
+            fogCtx.fillStyle = `rgba(220, 225, 230, 0.015)`;
+            fogCtx.fillRect(0, 0, width, height);
+        }
+    }, 100);
+
+    // Hàm kích hoạt hiệu ứng phóng Hào Quang khi chắp tay lạy
+    function triggerHaloEffect() {
+        if (isHaloAnimating) return; // Tránh kích hoạt trùng lặp liên tục
+        isHaloAnimating = true;
+        haloRadius = 0;
+        
+        // Phát một tiếng chuông điện tử nhỏ bằng Web Audio API (Không cần file âm thanh ngoài)
+        playHaloSound();
+
+        function animateHalo() {
+            // Xóa canvas hào quang cũ để vẽ khung hình mới
+            haloCtx.clearRect(0, 0, width, height);
+            
+            // Vẽ vòng tròn sóng hào quang lan tỏa từ tâm màn hình
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            haloRadius += 35; // Tốc độ phóng luồng hào quang ra rìa
+            
+            // Tạo màu gradient tỏa tròn linh thiêng
+            let gradient = haloCtx.createRadialGradient(centerX, centerY, haloRadius * 0.2, centerX, centerY, haloRadius);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');      // Tâm trắng sáng rực
+            gradient.addColorStop(0.2, 'rgba(255, 230, 100, 0.9)');  // Viền vàng kim hào quang
+            gradient.addColorStop(0.6, 'rgba(255, 150, 0, 0.4)');    // Ánh cam tỏa lan
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Trong suốt ở rìa sóng
+
+            haloCtx.fillStyle = gradient;
+            haloCtx.beginPath();
+            haloCtx.arc(centerX, centerY, haloRadius, 0, Math.PI * 2);
+            haloCtx.fill();
+
+            // Đồng thời dùng luồng hào quang này "thổi bay" lớp sương mờ trên fogCanvas
+            fogCtx.save();
+            fogCtx.globalCompositeOperation = 'destination-out';
+            let fogGradient = fogCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, haloRadius);
+            fogGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+            fogGradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.8)');
+            fogGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            fogCtx.fillStyle = fogGradient;
+            fogCtx.beginPath();
+            fogCtx.arc(centerX, centerY, haloRadius, 0, Math.PI * 2);
+            fogCtx.fill();
+            fogCtx.restore();
+
+            if (haloRadius < haloMaxRadius) {
+                requestAnimationFrame(animateHalo);
+            } else {
+                // Kết thúc hiệu ứng
+                haloCtx.clearRect(0, 0, width, height);
+                isHaloAnimating = false;
+                fogOpacity = 0; // Sương bị thổi sạch hoàn toàn
+            }
+        }
+        animateHalo();
+    }
+
+    // Hàm phát tiếng chuông ngân bằng mã hóa âm thanh trực tiếp
+    function playHaloSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // Nốt Đô cao ngân thánh thót
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5); // Giảm dần âm lượng trong 1.5s
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        } catch(e) { console.log("Trình duyệt chặn âm thanh tự động."); }
+    }
+
+    // XỬ LÝ NHẬN DIỆN BÀN TAY (MEDIAPIPE HANDS)
+    function onResults(results) {
+        // Tắt thông báo Loading khi nhận được khung hình đầu tiên từ AI
+        if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+        }
+
+        // Nếu phát hiện có bàn tay trong khung hình
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            
+            // LĂP QUA TẤT CẢ CÁC TAY ĐỂ XỬ LÝ HÀNH VI LAU MÀN HÌNH
+            results.multiHandLandmarks.forEach((landmarks) => {
+                // Điểm số 8 là đầu ngón tay trỏ (Index Finger Tip)
+                const indexTip = landmarks[8];
+                
+                // Quy đổi tọa độ chuẩn hóa (0->1) của MediaPipe ra pixel thực tế của Canvas
+                // Vì MediaPipe nhận từ camera lật, ta lấy (1 - indexTip.x) để trùng với hướng webcam lật gương của ta
+                const x = (1 - indexTip.x) * width;
+                const y = indexTip.y * height;
+
+                // Thực hiện hiệu ứng "Lau" bằng cách xóa pixel trên fogCanvas
+                fogCtx.save();
+                fogCtx.globalCompositeOperation = 'destination-out'; // Chế độ xóa vật thể gốc
+                
+                // Tạo một vết lau tròn mềm mượt (Radial Gradient nhạt dần ra viền)
+                let brushRadius = 55; // Độ rộng của ngón tay lau kính
+                let eraserGrd = fogCtx.createRadialGradient(x, y, brushRadius * 0.2, x, y, brushRadius);
+                eraserGrd.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                eraserGrd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                fogCtx.fillStyle = eraserGrd;
+                fogCtx.beginPath();
+                fogCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
+                fogCtx.fill();
+                fogCtx.restore();
+            });
+
+            // KIỂM TRA HÀNH VI CHẤP TAY LẠY (KHI XUẤT HIỆN ĐỦ 2 TAY)
+            if (results.multiHandLandmarks.length === 2 && !isHaloAnimating) {
+                const hand1 = results.multiHandLandmarks[0];
+                const hand2 = results.multiHandLandmarks[1];
+
+                // Lấy điểm số 9 (Gốc ngón tay giữa - đại diện cho tâm bàn tay tương đối)
+                const p1 = hand1[9];
+                const p2 = hand2[9];
+
+                // Tính khoảng cách toán học giữa 2 tâm bàn tay (Công thức Euclid hình học không gian)
+                const distance = Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
+
+                // Ngưỡng 0.12 tương đương việc hai bàn tay áp sát chặt vào nhau trên màn hình camera
+                if (distance < 0.12) {
+                    triggerHaloEffect();
+                }
+            }
+        }
+    }
+
+    // Cấu hình khởi tạo mô hình AI MediaPipe Hands
+    const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+        maxNumHands: 2,             // Nhận diện tối đa 2 tay để xử lý chắp lạy
+        modelComplexity: 1,         // Độ chính xác cân bằng với hiệu năng mượt mà
+        minDetectionConfidence: 0.6, // Ngưỡng tin cậy phát hiện tay
+        minTrackingConfidence: 0.6   // Ngưỡng tin cậy bám vết tay
+    });
+
+    hands.onResults(onResults);
+
+    // Thiết lập điều khiển luồng Camera đưa vào AI xử lý liên tục
+    const camera = new Camera(videoElement, {
+        onFrame: async () => {
+            await hands.send({ image: videoElement });
+        },
+        width: 1280,
+        height: 720
+    });
+    
+    // Bắt đầu bật camera
+    camera.start().catch(err => {
+        loadingDiv.innerHTML = "Lỗi: Không thể truy cập vào Webcam của bạn. Hãy cấp quyền duyệt camera!";
+        console.error(err);
+    });
+</script>
+
+</body>
+</html>
